@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Canon Boundary Guard for GPT Projects</title>
+  <meta name="description" content="Keeps ChatGPT from mixing files, chat, instructions, drafts, and assumptions during long sessions.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://xxyoudeadpunkxx.github.io/canon-boundary-guard-for-gpt-project/">
+  <link rel="alternate" type="text/plain" href="https://xxyoudeadpunkxx.github.io/canon-boundary-guard-for-gpt-project/llms.txt" title="LLM-readable index">
+  <link rel="alternate" type="application/json" href="https://xxyoudeadpunkxx.github.io/canon-boundary-guard-for-gpt-project/raw-manifest.json" title="Machine-readable manifest">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <meta property="og:title" content="Canon Boundary Guard for GPT Projects">
+  <meta property="og:description" content="Keeps ChatGPT from mixing files, chat, instructions, drafts, and assumptions during long sessions.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://xxyoudeadpunkxx.github.io/canon-boundary-guard-for-gpt-project/">
+  <meta property="og:image" content="https://xxyoudeadpunkxx.github.io/canon-boundary-guard-for-gpt-project/assets/canon-boundary-guard-banner.png">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareSourceCode",
+    "name": "Canon Boundary Guard for GPT Projects",
+    "description": "A ChatGPT Project package that helps keep files, chat, instructions, hypotheses, drafts, and model assumptions separate during long sessions.",
+    "url": "https://xxyoudeadpunkxx.github.io/canon-boundary-guard-for-gpt-project/",
+    "mainEntityOfPage": "https://xxyoudeadpunkxx.github.io/canon-boundary-guard-for-gpt-project/",
+    "codeRepository": "https://github.com/XxYouDeaDPunKxX/canon-boundary-guard-for-gpt-project",
+    "license": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "programmingLanguage": ["Markdown", "JSON", "Python"],
+    "runtimePlatform": "ChatGPT Projects",
+    "applicationCategory": "AI workflow tool",
+    "isAccessibleForFree": true,
+    "author": {
+      "@type": "Person",
+      "name": "XxYouDeaDPunKxX",
+      "url": "https://github.com/XxYouDeaDPunKxX"
+    },
+    "about": [
+      "ChatGPT Projects",
+      "long ChatGPT sessions",
+      "instruction boundaries",
+      "session state",
+      "provenance control"
+    ],
+    "keywords": "ChatGPT Projects, ChatGPT, long sessions, project instructions, provenance, session state"
+  }
+  </script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #071018;
+      --surface: #0d1a23;
+      --surface-2: #102331;
+      --line: #214154;
+      --line-soft: rgba(98, 197, 232, 0.2);
+      --text: #edf7fb;
+      --muted: #a8bfcc;
+      --dim: #7794a3;
+      --cyan: #43d8ff;
+      --green: #78da68;
+      --amber: #f2b54b;
+      --red: #ff6b7c;
+      --max: 1240px;
+      --r: 8px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+    }
+
+    a {
+      color: inherit;
+      text-decoration-color: rgba(67, 216, 255, 0.6);
+      text-underline-offset: 0.2em;
+    }
+
+    a:hover {
+      color: #ffffff;
+      text-decoration-color: var(--cyan);
+    }
+
+    .wrap {
+      width: min(100% - 32px, var(--max));
+      margin: 0 auto;
+    }
+
+    .banner-shell {
+      padding: 18px 0 0;
+      background: #02070c;
+    }
+
+    .banner {
+      width: min(100% - 32px, 1360px);
+      margin: 0 auto;
+      border: 1px solid rgba(67, 216, 255, 0.24);
+      border-radius: 10px;
+      background: #02070c;
+      box-shadow: 0 20px 70px rgba(0, 0, 0, 0.38);
+      overflow: hidden;
+    }
+
+    .banner img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    header {
+      padding: 48px 0 36px;
+      border-bottom: 1px solid var(--line-soft);
+    }
+
+    .intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      gap: 48px;
+      align-items: start;
+    }
+
+    .kicker {
+      margin: 0 0 14px;
+      color: var(--cyan);
+      font-size: 0.92rem;
+      font-weight: 800;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      max-width: 13ch;
+      margin-bottom: 18px;
+      font-size: clamp(3rem, 7.2vw, 6.6rem);
+      line-height: 0.94;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      max-width: 720px;
+      margin-bottom: 18px;
+      color: var(--text);
+      font-size: clamp(1.25rem, 2.4vw, 1.72rem);
+      line-height: 1.28;
+    }
+
+    .sublead {
+      max-width: 690px;
+      margin-bottom: 28px;
+      color: var(--muted);
+      font-size: 1.08rem;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .button {
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 14px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #0b1a24;
+      color: var(--text);
+      font-weight: 800;
+      text-decoration: none;
+    }
+
+    .button.primary {
+      border-color: rgba(67, 216, 255, 0.65);
+      color: #02131a;
+      background: var(--cyan);
+    }
+
+    .factbox {
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      background: var(--surface);
+    }
+
+    .factbox h2 {
+      margin: 0;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line-soft);
+      color: var(--cyan);
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .factbox dl {
+      margin: 0;
+      padding: 18px;
+    }
+
+    .factbox dt {
+      margin-top: 18px;
+      color: var(--dim);
+      font-size: 0.86rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .factbox dt:first-child {
+      margin-top: 0;
+    }
+
+    .factbox dd {
+      margin: 4px 0 0;
+      color: var(--text);
+    }
+
+    main {
+      padding: 18px 0 56px;
+    }
+
+    section {
+      padding: 48px 0;
+      border-bottom: 1px solid var(--line-soft);
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, 0.95fr) minmax(260px, 0.55fr);
+      gap: 48px;
+      align-items: start;
+    }
+
+    .section-text {
+      max-width: 760px;
+    }
+
+    h2 {
+      margin-bottom: 14px;
+      font-size: clamp(1.85rem, 3vw, 3rem);
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    .section-text > p {
+      color: var(--muted);
+      font-size: 1.06rem;
+    }
+
+    .prevent-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .failure,
+    .rail,
+    .steps,
+    .limits {
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      background: var(--surface);
+    }
+
+    .failure {
+      min-height: 104px;
+      padding: 18px;
+    }
+
+    .failure strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--text);
+      font-size: 1.02rem;
+    }
+
+    .failure span {
+      color: var(--muted);
+    }
+
+    .rail {
+      padding: 20px;
+    }
+
+    .rail h3 {
+      margin-bottom: 14px;
+      color: var(--cyan);
+      font-size: 1rem;
+      text-transform: uppercase;
+    }
+
+    .rail ol,
+    .rail ul {
+      margin: 0;
+      padding-left: 1.2rem;
+      color: var(--muted);
+    }
+
+    .rail li + li {
+      margin-top: 8px;
+    }
+
+    .steps {
+      margin-top: 28px;
+      padding: 0;
+      list-style: none;
+      counter-reset: step;
+    }
+
+    .steps li {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 14px;
+      padding: 16px 18px;
+      border-top: 1px solid var(--line-soft);
+      counter-increment: step;
+      color: var(--muted);
+    }
+
+    .steps li:first-child {
+      border-top: 0;
+    }
+
+    .steps li::before {
+      content: counter(step);
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(67, 216, 255, 0.55);
+      border-radius: 50%;
+      color: var(--cyan);
+      font-weight: 900;
+    }
+
+    .steps strong {
+      color: var(--text);
+    }
+
+    .limits {
+      padding: 20px;
+      border-color: rgba(255, 107, 124, 0.42);
+      background: rgba(255, 107, 124, 0.06);
+    }
+
+    .limits ul {
+      margin: 0;
+      padding-left: 1.2rem;
+      color: #f1c5cc;
+    }
+
+    .limits li + li {
+      margin-top: 8px;
+    }
+
+    .repo-block {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .repo-item {
+      min-width: 0;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      background: var(--surface-2);
+    }
+
+    .repo-item h3 {
+      margin-bottom: 8px;
+      font-size: 1rem;
+      color: var(--cyan);
+    }
+
+    .repo-item p {
+      margin-bottom: 0;
+      color: var(--muted);
+      overflow-wrap: anywhere;
+    }
+
+    footer {
+      padding: 26px 0;
+      color: var(--dim);
+      font-size: 0.92rem;
+    }
+
+    .footer-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    .machine-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    @media (max-width: 920px) {
+      .intro,
+      .split {
+        grid-template-columns: 1fr;
+      }
+
+      .intro {
+        gap: 28px;
+      }
+
+      .factbox {
+        max-width: 560px;
+      }
+
+      .repo-block {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .wrap,
+      .banner {
+        width: min(100% - 20px, var(--max));
+      }
+
+      header {
+        padding-top: 34px;
+      }
+
+      h1 {
+        font-size: clamp(2.6rem, 15vw, 4rem);
+      }
+
+      .prevent-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .steps li {
+        grid-template-columns: 38px 1fr;
+        padding: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="banner-shell">
+    <div class="banner" aria-label="Canon Boundary Guard visual banner">
+      <img src="assets/canon-boundary-guard-banner.png" alt="Canon Boundary Guard diagram showing evidence, chat memory, approved deltas, instructions, model priors, and output candidates separated into review layers.">
+    </div>
+  </div>
+
+  <header>
+    <div class="wrap intro">
+      <div>
+        <p class="kicker">For ChatGPT Projects and long chats</p>
+        <h1>Canon Boundary Guard for GPT Projects</h1>
+        <p class="lead">Keeps ChatGPT from mixing files, chat, instructions, drafts, and assumptions during long sessions.</p>
+        <p class="sublead">For ChatGPT Projects first. Also usable in normal chats, with weaker continuity.</p>
+        <div class="actions">
+          <a class="button primary" href="https://github.com/XxYouDeaDPunKxX/canon-boundary-guard-for-gpt-project" target="_blank" rel="noopener noreferrer">Open repository</a>
+          <a class="button" href="#use">How to use it</a>
+        </div>
+      </div>
+
+      <aside class="factbox" aria-label="Package facts">
+        <h2>Package</h2>
+        <dl>
+          <dt>Folder</dt>
+          <dd>canon-boundary-guard-gpt/</dd>
+          <dt>Recommended</dt>
+          <dd>ChatGPT Project</dd>
+          <dt>Also works in</dt>
+          <dd>Normal chat, manually</dd>
+          <dt>Not</dt>
+          <dd>Native ChatGPT skill, plugin, browser extension, or hard enforcement</dd>
+        </dl>
+      </aside>
+    </div>
+  </header>
+
+  <main>
+    <section id="prevents">
+      <div class="wrap">
+        <div class="section-text">
+          <h2>What It Prevents</h2>
+          <p>Long sessions can blur the difference between what was inspected, what was said, what was approved, and what the model only assumed.</p>
+        </div>
+
+        <div class="prevent-grid" aria-label="Common boundary failures">
+          <div class="failure">
+            <strong>Chat becomes decision</strong>
+            <span>A message starts acting like project truth.</span>
+          </div>
+          <div class="failure">
+            <strong>Draft becomes approved</strong>
+            <span>Generated material starts looking final.</span>
+          </div>
+          <div class="failure">
+            <strong>Assumption becomes fact</strong>
+            <span>A model guess starts acting like evidence.</span>
+          </div>
+          <div class="failure">
+            <strong>Instructions become content</strong>
+            <span>Behavior rules get mixed with project material.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="works">
+      <div class="wrap split">
+        <div class="section-text">
+          <h2>How It Works</h2>
+          <p>The package gives ChatGPT a frame for separating material before it becomes reusable.</p>
+          <p>It does not produce content by itself. It asks ChatGPT to inspect the bundle, track the source of what it is using, and slow down when something is about to become saved, reused, or treated as canon.</p>
+        </div>
+
+        <aside class="rail" aria-label="Boundary sequence">
+          <h3>Boundary</h3>
+          <ol>
+            <li>Inspect</li>
+            <li>Separate</li>
+            <li>Slow down</li>
+            <li>Approve</li>
+          </ol>
+        </aside>
+      </div>
+    </section>
+
+    <section id="use">
+      <div class="wrap split">
+        <div class="section-text">
+          <h2>Use It In A Project</h2>
+          <p>A Project is recommended because the instruction anchor stays with the workspace.</p>
+          <ol class="steps">
+            <li><span>Zip the <strong>canon-boundary-guard-gpt</strong> folder.</span></li>
+            <li><span>Add the zip to your ChatGPT Project files or sources.</span></li>
+            <li><span>Copy <strong>PROJECT_CUSTOM_INSTRUCTIONS.txt</strong>.</span></li>
+            <li><span>Paste it into the Project instructions.</span></li>
+            <li><span>Start a new chat inside the Project.</span></li>
+          </ol>
+        </div>
+
+        <aside class="rail" aria-label="Normal chat use">
+          <h3>Normal Chat</h3>
+          <p>Upload the same zip and ask ChatGPT to inspect it as the active frame.</p>
+          <p>This is weaker because the frame lives only inside the conversation.</p>
+        </aside>
+      </div>
+    </section>
+
+    <section id="limits">
+      <div class="wrap split">
+        <div class="section-text">
+          <h2>Limits</h2>
+          <p>Canon Boundary Guard reduces silent promotion. It does not create hard enforcement.</p>
+        </div>
+
+        <div class="limits">
+          <ul>
+            <li>It is not a native ChatGPT skill.</li>
+            <li>It is not a plugin or browser extension.</li>
+            <li>It cannot block every answer, save, file action, or UI action.</li>
+            <li>You still need to approve anything reusable, saved, or permanent.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="repository">
+      <div class="wrap">
+        <div class="section-text">
+          <h2>Repository</h2>
+        </div>
+
+        <div class="repo-block">
+          <div class="repo-item">
+            <h3>GitHub</h3>
+            <p><a href="https://github.com/XxYouDeaDPunKxX/canon-boundary-guard-for-gpt-project" target="_blank" rel="noopener noreferrer">canon-boundary-guard-for-gpt-project</a></p>
+          </div>
+          <div class="repo-item">
+            <h3>License</h3>
+            <p>CC BY-SA 4.0</p>
+          </div>
+          <div class="repo-item">
+            <h3>Machine-readable</h3>
+            <p><a href="llms.txt">llms.txt</a> · <a href="raw-manifest.json">manifest</a> · <a href="sitemap.xml">sitemap</a></p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-row">
+      <span>Canon Boundary Guard for GPT Projects.</span>
+      <span class="machine-links" aria-label="Machine-readable project files">
+        <a href="llms.txt">llms.txt</a>
+        <a href="raw-manifest.json">manifest</a>
+        <a href="sitemap.xml">sitemap</a>
+      </span>
+    </div>
+  </footer>
+</body>
+</html>

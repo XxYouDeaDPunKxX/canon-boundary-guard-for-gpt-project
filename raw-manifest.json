@@ -1,0 +1,27 @@
+{
+  "name": "Canon Boundary Guard for GPT Projects",
+  "type": "github-pages-project-page",
+  "site_root": "https://xxyoudeadpunkxx.github.io/canon-boundary-guard-for-gpt-project/",
+  "canonical_page": "https://xxyoudeadpunkxx.github.io/canon-boundary-guard-for-gpt-project/",
+  "repository": "https://github.com/XxYouDeaDPunKxX/canon-boundary-guard-for-gpt-project",
+  "license": "CC BY-SA 4.0",
+  "summary": "Keeps ChatGPT from mixing files, chat, instructions, drafts, and assumptions during long sessions.",
+  "audience": [
+    "ChatGPT Project users",
+    "people running long ChatGPT sessions",
+    "AI workflow maintainers"
+  ],
+  "primary_package": "canon-boundary-guard-gpt/",
+  "instruction_file": "PROJECT_CUSTOM_INSTRUCTIONS.txt",
+  "not": [
+    "native ChatGPT skill",
+    "plugin",
+    "browser extension",
+    "hard enforcement"
+  ],
+  "discovery": {
+    "llms": "https://xxyoudeadpunkxx.github.io/canon-boundary-guard-for-gpt-project/llms.txt",
+    "manifest": "https://xxyoudeadpunkxx.github.io/canon-boundary-guard-for-gpt-project/raw-manifest.json",
+    "sitemap": "https://xxyoudeadpunkxx.github.io/canon-boundary-guard-for-gpt-project/sitemap.xml"
+  }
+}

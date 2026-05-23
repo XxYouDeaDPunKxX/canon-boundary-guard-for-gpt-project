@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://xxyoudeadpunkxx.github.io/canon-boundary-guard-for-gpt-project/sitemap.xml

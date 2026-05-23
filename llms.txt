@@ -1,0 +1,37 @@
+# Canon Boundary Guard for GPT Projects
+
+Canonical page: https://xxyoudeadpunkxx.github.io/canon-boundary-guard-for-gpt-project/
+Repository: https://github.com/XxYouDeaDPunKxX/canon-boundary-guard-for-gpt-project
+License: CC BY-SA 4.0
+
+Canon Boundary Guard for GPT Projects keeps ChatGPT from mixing files, chat, instructions, drafts, and assumptions during long sessions.
+
+It is built for ChatGPT Projects first. It can also be used in a normal ChatGPT conversation by uploading the same bundle and asking ChatGPT to inspect it as the active frame, but continuity is weaker.
+
+Primary package folder:
+
+- canon-boundary-guard-gpt/
+
+Project instruction file:
+
+- PROJECT_CUSTOM_INSTRUCTIONS.txt
+
+The package helps reduce these failures:
+
+- chat material treated as project truth
+- generated drafts treated as approved material
+- model assumptions treated as evidence
+- behavior instructions mixed with project content
+
+Limits:
+
+- not a native ChatGPT skill
+- not a plugin
+- not a browser extension
+- not hard enforcement
+- operator approval still matters for reusable, saved, or permanent material
+
+Discovery:
+
+- https://xxyoudeadpunkxx.github.io/canon-boundary-guard-for-gpt-project/raw-manifest.json
+- https://xxyoudeadpunkxx.github.io/canon-boundary-guard-for-gpt-project/sitemap.xml
