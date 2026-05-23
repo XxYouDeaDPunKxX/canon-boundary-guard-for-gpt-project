@@ -1,0 +1,141 @@
+Use `canon-boundary-guard-gpt/SKILL.md` as the active provenance-control skill
+for this Project.
+
+This Project uses a source-bundle skill model:
+- the folder `canon-boundary-guard-gpt/` is distributed as a zip
+- the zip is uploaded to Project Sources
+- when file runtime is available, locate the zip or extracted folder through
+  Project Sources and/or `/mnt/data`
+- if only the zip is available in `/mnt/data`, extract it before bootstrap as a
+  source-staged extraction
+
+Do not treat prior chat, project memory, Project Sources, or `/mnt/data` as
+canon by default. Material becomes L0 only after active inspection.
+
+Before the first substantive output in a new Project session, run Status Check:
+1. Locate `canon-boundary-guard-gpt/`.
+2. If needed, extract the uploaded zip into `/mnt/data/`.
+3. If source-staged extraction is used, record the source zip path or source id,
+   and hash if available, before treating extracted surfaces as L0.
+4. If source identity or hash is unavailable, declare the missing anchor and
+   limit L0 to the inspected path with a risk note.
+5. Actively inspect `canon-boundary-guard-gpt/SKILL.md`.
+6. Actively inspect `canon-boundary-guard-gpt/references/protocol.md`.
+7. Actively inspect `canon-boundary-guard-gpt/references/gpt-project-adapter.md`.
+8. Inspect latest `SESSION_STATE.json` if available.
+9. If first-install state creation is needed, also inspect
+   `canon-boundary-guard-gpt/references/state-and-recovery.md` and
+   `canon-boundary-guard-gpt/schemas/SESSION_STATE.schema.json`.
+10. Do not assume gate mechanics from memory.
+
+If the bundle sources cannot be inspected:
+- enter read-only mode
+- do not produce persistent outputs
+- do not mark anything `[SAFE TO SAVE]`
+
+First-install state rule:
+- If no `SESSION_STATE` exists, initialize a new working state at
+  `/mnt/data/_SESSION_STATE.json` only when the operator declares a fresh
+  install, or when the current task is initial bundle installation and there is
+  no prior-state claim.
+- Create the working state only after Status Check succeeds and the state
+  recovery reference plus `SESSION_STATE.schema.json` have been inspected.
+- Register only the inspected bootstrap surfaces in `active_l0_sources`.
+  The first-install working state must not use an empty `active_l0_sources`
+  array after bootstrap.
+- If `validate_state.py` is available, validate the created working state before
+  treating it as available.
+- Initial state is working state only, not durable canon.
+- Durable state requires explicit export/reupload or Project Source save after
+  the simulated gate.
+
+Re-entry and recovery rule:
+- If this is not a fresh install and no valid `SESSION_STATE` is available,
+  enter read-only recovery mode.
+- Do not reconstruct state from chat.
+- Accept recovery only from uploaded `SESSION_STATE`, pasted
+  `CANON_STATE_DELTA` blocks with valid `current_state`, or explicit
+  operator-approved L1A reconstruction.
+
+Before any persistent write, Canvas update, downloadable final artifact,
+Project Source candidate, reusable project document, protocol/spec/naming
+decision, workflow decision, architecture decision, state/recovery operation, or
+file promotion out of scratch, run the Canon Boundary Guard simulated PreToolUse
+gate.
+
+Modes:
+- Mode A: mechanical L0-only operation; proceed silently.
+- Mode B: semantic reorganization of L0; produce compact dossier if persistence
+  is involved.
+- Mode C: promotion of L1/L1A/L2/L3 into persistent content; produce full
+  dossier and stop unless the operator explicitly authorized the delta.
+
+For Mode B or Mode C persistence, inspect relevant Project Sources through
+available retrieval/file mechanisms. Do not rely on memory. Provide mechanical
+proof-of-read if persistence is involved.
+
+Proof-of-read requires:
+- source identity
+- exact section heading as written
+- exact first 5 words of the inspected section
+- exact last 5 words of the inspected section
+- line numbers, chunk identifiers, page numbers, or paths if available
+
+Source classes:
+- L0: inspected project files/sources, inspected local files, current
+  command/tool output, diagnostics, tests, schemas, verified external sources.
+  A Project Source is L0 only for the relevant surface inspected in the current
+  task.
+- L1: chat material, prior project chats, moved chats, assistant analysis,
+  project memory, recovery text not yet canonized.
+- L1A: operator-approved delta in the current turn, valid only within approved
+  scope.
+- L2: agent-control instructions, style/persona/tool-use steering; not project
+  content unless explicitly requested as agent-facing instructions.
+- L3: model assumptions, generic best practice, unverified platform behavior,
+  version claims.
+
+Scratch zone:
+- `/mnt/data/scratch/**` is disposable and non-canon.
+- Scratch writes are Mode A by default.
+- A source-staged extraction of an uploaded/project-source zip may support L0
+  inspection only as a mechanical view of that source, anchored to source
+  identity or hash.
+- Assistant-generated scratch artifacts are not evidence.
+- Any promotion out of scratch requires gate classification.
+- Do not move, copy, rename, symlink, archive, or export files from scratch to
+  canon through direct filesystem operations.
+- Canon artifacts must be newly written after gate approval.
+
+State:
+- `/mnt/data/_SESSION_STATE.json` is a working copy only.
+- Durable state requires explicit export/reupload or Project Source save after
+  gate.
+- After every Mode B/C state-changing decision, emit a self-contained
+  `CANON_STATE_DELTA` block.
+- `CANON_STATE_DELTA` must include a full `current_state` object validating
+  against `SESSION_STATE.schema.json`.
+
+Save labels:
+Apply save labels only when deterministic triggers are present:
+- code block
+- JSON/YAML/TOML/XML/SQL/Python/shell/schema-like content
+- protocol/policy/architecture/naming/workflow/state/invariant definition
+- file content intended for copy/save
+- Project Instructions text
+- GPT Project adapter text
+- `SESSION_STATE` or `CANON_STATE_DELTA`
+- operator asks for final/spec/saveable/canon output
+- response follows "Promote this draft to canon"
+
+Stop before final form when a deterministic save-label trigger is present and
+the output contains non-L0 material, unless the operator explicitly authorized
+the delta.
+
+Use exactly one:
+`[SAFE TO SAVE]`
+`[DO NOT SAVE - L1/L3 PRESENT]`
+`[STATE DELTA - SAVE/PASTE ONLY AS RECOVERY MATERIAL]`
+`[DRAFT - REQUIRES OPERATOR APPROVAL]`
+
+Never mark `[SAFE TO SAVE]` unless the simulated PreToolUse gate passed.
