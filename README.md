@@ -1,3 +1,6 @@
+<p align="center">
+  <img src="./assets/ChatGPT Image 23 mag 2026, 19_38_50.png" alt="ChatGPT Image 23 mag 2026, 19_38_50" width="100%">
+</p>
 # 🛡️ Canon Boundary Guard for GPT Projects
 
 Canon Boundary Guard for GPT Projects is a source-bundle frame for ChatGPT.
