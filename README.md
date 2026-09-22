@@ -10,10 +10,16 @@ It helps ChatGPT keep project files, chat context, project instructions,
 operator instructions, working assumptions, and generated drafts separated
 during long or complex sessions.
 
-It is not a native ChatGPT skill. It works by combining Project Instructions
+The original source-bundle distribution works by combining Project Instructions
 with a zipped folder added to the Project files. You can also use it manually in
 a normal chat by uploading the bundle and asking ChatGPT to inspect it, but a
 Project gives the frame a more stable place to live.
+
+The repository also includes a native ChatGPT plugin distribution in
+[`plugin/canon-boundary-guard/`](plugin/canon-boundary-guard/README.md).
+It carries the same protocol and session-start posture, with installed-resource
+bindings instead of the source-bundle upload path. Plugin version **0.1.1**
+includes the corrected Python helpers; protocol version **1.1** is unchanged.
 
 ## 🔎 What It Does
 
@@ -33,6 +39,18 @@ The main goal is simple: a chat message, draft, assumption, or generated file
 should not silently become canon.
 
 ## 📦 Install
+
+Native plugin setup:
+
+1. Run `python tools/package_plugin.py` from this repository.
+2. In ChatGPT web, open **Plugin → Crea app** and upload
+   `dist/canon-boundary-guard-0.1.1.zip`.
+3. Complete **Aggiungi plugin** and start a new conversation with the plugin available.
+
+The full posture is required before the first substantive output. Import and
+implicit startup in ChatGPT still need an account-level test; local packaging
+and script tests do not establish that behavior. See the
+[plugin README](plugin/canon-boundary-guard/README.md) for the binding and test criteria.
 
 Recommended Project setup:
 
@@ -265,6 +283,22 @@ not decide provenance.
 files and reads with `utf-8-sig`.
 
 `artifact_fingerprint.py` emits file size, modified time, and SHA-256.
+
+### Helper regression tests
+
+Run `python -B -m unittest discover -s tests -v` from the repository root.
+To exercise the optional `jsonschema` branch as well as the manual fallback,
+install `requirements-test.txt` in your test environment first. Without it,
+the suite explicitly skips the tests that require that library.
+
+The regressions cover integral JSON sequence values and conflicting delta
+sequences, Markdown fenced code and heading selection, the ten-word proof
+boundary, relocated schema paths, UTF-8 BOM input, and file fingerprints.
+
+For the native copy, set `CBG_TEST_BUNDLE` to
+`plugin/canon-boundary-guard/skills/canon-boundary-guard-gpt-project` and run the
+same suite. `python tools/package_plugin.py` separately checks that the native
+resources match the source bundle and verifies the generated ZIP contents.
 
 ## ⚠️ Limits
 

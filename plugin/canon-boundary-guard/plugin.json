@@ -1,0 +1,25 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "canon-boundary-guard",
+  "version": "0.1.1",
+  "description": "Canon Boundary Guard provenance posture for ChatGPT, active from session start before the first substantive output. Preserves the original protocol, persistence gate, save labels, state, recovery, and proof-of-read rules.",
+  "author": {
+    "name": "XxYouDeaDPunKxX",
+    "url": "https://github.com/xxyoudeadpunkxx"
+  },
+  "repository": "https://github.com/xxyoudeadpunkxx/canon-boundary-guard-for-gpt-project",
+  "license": "CC-BY-SA-4.0",
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Canon Boundary Guard",
+        "shortDescription": "Provenance from session start",
+        "longDescription": "The original Canon Boundary Guard for GPT Projects, packaged as a native documentary plugin. Applies the full provenance posture from the beginning of a ChatGPT conversation, preserving its source classes, persistence gate, proof-of-read, save labels, and state recovery conditions.",
+        "developerName": "XxYouDeaDPunKxX",
+        "category": "Productivity",
+        "capabilities": ["Provenance control", "Session bootstrap", "State and recovery"],
+        "defaultPrompt": "Iniziamo il lavoro sul progetto."
+      }
+    }
+  }
+}

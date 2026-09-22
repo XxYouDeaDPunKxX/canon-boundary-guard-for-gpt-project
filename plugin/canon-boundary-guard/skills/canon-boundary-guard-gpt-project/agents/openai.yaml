@@ -1,0 +1,5 @@
+interface:
+  display_name: "Canon Boundary Guard for GPT Projects"
+  short_description: "Provenance posture active from session start"
+policy:
+  allow_implicit_invocation: true
