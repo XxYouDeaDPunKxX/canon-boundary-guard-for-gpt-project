@@ -41,10 +41,9 @@ should not silently become canon.
 
 ### ChatGPT web plugin
 
-1. Download or clone this repository, then run `python tools/package_plugin.py`
-   from its root.
-2. In ChatGPT web, open the plugin creation dialog from the Plugins page and upload
-   `dist/canon-boundary-guard-0.3.2.zip`.
+1. [Download the plugin ZIP — version 0.3.2](https://github.com/XxYouDeaDPunKxX/canon-boundary-guard-for-gpt-project/raw/refs/heads/main/downloads/canon-boundary-guard-0.3.2.zip).
+2. In ChatGPT web, open the plugin creation dialog from the Plugins page and
+   upload the downloaded ZIP.
 3. Complete the add-plugin flow. Activate Canon Boundary Guard through your
    ChatGPT custom instructions or explicitly select/tag the plugin in the first
    message of a new conversation.
@@ -54,9 +53,9 @@ For custom instructions, use:
 > Use Canon Boundary Guard from the start of every conversation. Read its complete
 > skill before the first substantive response and apply it throughout the chat.
 
-Upload the generated plugin archive. Once loaded, the complete posture stays
-active throughout the conversation; no initialization declaration or state file
-is needed. The package description is not a session-start hook, so installation
+Once loaded, the complete posture stays active throughout the conversation;
+no initialization declaration or state file is needed. The package description
+is not a session-start hook, so installation
 alone does not establish that the skill was loaded. See the
 [plugin README](plugin/canon-boundary-guard/README.md) for scope and verification.
 
@@ -288,7 +287,7 @@ Only the Project bundle includes `validate_state.py`, which validates
 - reads JSON with `utf-8-sig`
 - fails closed when a required schema feature cannot be checked
 
-### Repository checks
+### Maintainer checks
 
 Run `python -B -m unittest discover -s tests -v` from the repository root.
 To exercise the optional `jsonschema` branch as well as the manual fallback,

@@ -10,13 +10,13 @@ enter reusable answers or artifacts.
 
 ## Personal import
 
-From the repository root, build with `python tools/package_plugin.py`.
-In ChatGPT web, open the plugin creation dialog from the Plugins page, upload
-`dist/canon-boundary-guard-0.3.2.zip`, and complete the add-plugin flow.
-Use the generated plugin archive rather than a ZIP of the repository.
+1. [Download the plugin ZIP — version 0.3.2](https://github.com/XxYouDeaDPunKxX/canon-boundary-guard-for-gpt-project/raw/refs/heads/main/downloads/canon-boundary-guard-0.3.2.zip).
+2. In ChatGPT web, open the plugin creation dialog from the Plugins page and
+   upload the downloaded ZIP.
+3. Complete the add-plugin flow. Activate Canon Boundary Guard through your
+   ChatGPT custom instructions or explicitly select/tag the plugin in the first
+   message of a new conversation.
 
-Activate Canon Boundary Guard through your ChatGPT custom instructions or
-explicitly select/tag the plugin in the first message of a new conversation.
 For custom instructions, use:
 
 > Use Canon Boundary Guard from the start of every conversation. Read its complete
@@ -73,8 +73,8 @@ zero words and empty word lists. Its text output says `none (empty file)`.
 
 The repository tests cover packaging, resource references, unchanged helper
 copies, archive contents, and execution of extracted helpers from another
-working directory. Run `python -B -X utf8 tools/verify_plugin.py` from the
-repository root to generate local test logs and package results in `dist/`.
+working directory. Development commands are in the repository's
+[maintainer notes](https://github.com/XxYouDeaDPunKxX/canon-boundary-guard-for-gpt-project#maintainer-checks).
 These checks do not establish ChatGPT's loading or instruction-following behavior.
 
 To verify the installed plugin, activate it in a new ChatGPT web conversation
