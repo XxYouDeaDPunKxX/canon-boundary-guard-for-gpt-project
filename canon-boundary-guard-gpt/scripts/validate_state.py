@@ -6,6 +6,7 @@ This script performs mechanical checks only. It does not decide provenance.
 from __future__ import annotations
 
 import argparse
+from decimal import Decimal
 import json
 from pathlib import Path
 
@@ -16,7 +17,8 @@ DELTA_SCHEMA_PATH = SCHEMA_DIR / "CANON_STATE_DELTA.schema.json"
 
 def load_json(path: Path) -> object:
     try:
-        return json.loads(path.read_text(encoding="utf-8-sig"))
+        # Preserve exact fractions and keep exponent notation compact.
+        return json.loads(path.read_text(encoding="utf-8-sig"), parse_float=Decimal)
     except Exception as exc:
         raise ValueError(f"{path}: cannot read JSON: {exc}") from exc
 
@@ -34,7 +36,7 @@ def json_type(value: object) -> str:
         return "string"
     if isinstance(value, int) and not isinstance(value, bool):
         return "integer"
-    if isinstance(value, (int, float)) and not isinstance(value, bool):
+    if isinstance(value, (int, float, Decimal)) and not isinstance(value, bool):
         return "number"
     return type(value).__name__
 
@@ -50,9 +52,10 @@ def schema_type_matches(value: object, expected: str) -> bool:
         # JSON Schema integers include numeric representations such as 1.0.
         return not isinstance(value, bool) and (
             isinstance(value, int) or (isinstance(value, float) and value.is_integer())
+            or (isinstance(value, Decimal) and value.is_finite() and value == value.to_integral_value())
         )
     if expected == "number":
-        return isinstance(value, (int, float)) and not isinstance(value, bool)
+        return isinstance(value, (int, float, Decimal)) and not isinstance(value, bool)
     if expected == "boolean":
         return isinstance(value, bool)
     if expected == "null":
@@ -66,7 +69,11 @@ def validate_with_jsonschema(value: object, schema: dict, label: str) -> list[st
     except Exception:
         return None
 
-    validator = jsonschema.Draft202012Validator(schema)
+    integer_types = jsonschema.Draft202012Validator.TYPE_CHECKER.redefine(
+        "integer", lambda checker, instance: schema_type_matches(instance, "integer")
+    )
+    validator_class = jsonschema.validators.extend(jsonschema.Draft202012Validator, type_checker=integer_types)
+    validator = validator_class(schema)
     errors = []
     for err in sorted(validator.iter_errors(value), key=lambda item: list(item.path)):
         path = ".".join(str(part) for part in err.path)
@@ -114,7 +121,7 @@ def validate_schema_strict(value: object, schema: dict, label: str) -> list[str]
         errors.append(f"{label}: expected one of {schema['enum']!r}")
 
     if "minimum" in schema:
-        if not isinstance(value, (int, float)) or isinstance(value, bool):
+        if not isinstance(value, (int, float, Decimal)) or isinstance(value, bool):
             errors.append(f"{label}: minimum applies to non-number")
         elif value < schema["minimum"]:
             errors.append(f"{label}: must be >= {schema['minimum']!r}")

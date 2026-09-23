@@ -1,11 +1,8 @@
-"""Reproduce script behavior without changing the protocol or plugin.
+"""Audit the two mechanical helpers shipped in the ChatGPT plugin.
 
-Example:
-  python tools/audit_plugin_scripts.py --jsonschema-path PATH --output dist/SCRIPT_CODE_AUDIT.json
-The optional path contains an isolated installation of jsonschema.
-Exit 1 means a required behavior tested here failed; observations are separate.
+Run: python tools/audit_plugin_scripts.py --output dist/SCRIPT_CODE_AUDIT.json
+The original source bundle's state validator is covered by tests/test_helpers.py.
 """
-
 import argparse
 import hashlib
 import importlib.util
@@ -15,13 +12,12 @@ import sys
 import tempfile
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
-SKILL = ROOT / "plugin/canon-boundary-guard/skills/canon-boundary-guard-gpt-project"
+SKILL = ROOT / "plugin/canon-boundary-guard/skills/canon-boundary-guard"
 
 
-def load(name, path):
-    spec = importlib.util.spec_from_file_location(name, path)
+def load(name):
+    spec = importlib.util.spec_from_file_location(name, SKILL / "scripts" / (name + ".py"))
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -29,97 +25,73 @@ def load(name, path):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--jsonschema-path", type=Path)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
-    if args.jsonschema_path:
-        sys.path.insert(0, str(args.jsonschema_path.resolve()))
     sys.dont_write_bytecode = True
-    validation = load("cbg_validation", SKILL / "scripts/validate_state.py")
-    proof = load("cbg_proof", SKILL / "scripts/extract_proof.py")
-    fingerprint = load("cbg_fingerprint", SKILL / "scripts/artifact_fingerprint.py")
-    state = {"protocol": "canon-boundary-guard:gpt-project-adapter", "protocol_version": "1.1",
-             "state_seq": 1, "updated_at": "2026-09-22T00:00:00Z",
-             "active_l0_sources": [{"source_id": "synthetic-fixture", "source_type": "local_file", "status": "inspected"}],
-             "authorized_deltas": [], "open_conflicts": [], "pending_decisions": [], "last_persistent_artifacts": []}
-    delta = {"type": "CANON_STATE_DELTA", "seq": 1, "timestamp": "2026-09-22T00:00:00Z",
-             "basis": {"previous_seq": 0},
-             "decision": {"mode": "B", "summary": "Synthetic audit only", "authorized_delta": "", "affected_targets": []},
-             "current_state": state, "operator_action_required": "Synthetic audit only"}
+    proof = load("extract_proof")
+    fingerprint = load("artifact_fingerprint")
     checks, observations = [], []
 
     def check(name, actual, expected):
-        checks.append({"case": name, "passed": actual == expected, "expected": expected, "actual": actual})
+        checks.append({"case": name, "passed": actual == expected,
+                       "expected": expected, "actual": actual})
 
-    validator_backend = validation.validate_with_jsonschema
-    backends = [("fallback", lambda *unused: None)]
-    if validator_backend(state, json.loads(validation.STATE_SCHEMA_PATH.read_text()), "state") is not None:
-        backends.append(("jsonschema", validator_backend))
-    for backend_name, backend in backends:
-        validation.validate_with_jsonschema = backend
-        check(f"{backend_name}: valid state", not validation.validate_state_obj(state), True)
-        check(f"{backend_name}: valid full delta", not validation.validate_delta_obj(delta), True)
-        check(f"{backend_name}: boolean sequence rejected", not validation.validate_state_obj(dict(state, state_seq=True)), False)
-        check(f"{backend_name}: additional property rejected", not validation.validate_state_obj(dict(state, unexpected=1)), False)
-        check(f"{backend_name}: wrong protocol rejected", not validation.validate_state_obj(dict(state, protocol="other")), False)
-        check(f"{backend_name}: integral JSON number accepted", not validation.validate_state_obj(dict(state, state_seq=1.0)), True)
-        mismatch = dict(delta, current_state=dict(state, state_seq=2))
-        check(f"{backend_name}: integer delta mismatch rejected", not validation.validate_delta_obj(mismatch), False)
-        check(f"{backend_name}: integral-float delta mismatch rejected", not validation.validate_delta_obj(dict(mismatch, seq=1.0)), False)
-        observations.append({"case": f"{backend_name}: schema-only state check",
-                             "input": "empty active_l0_sources and updated_at='not-a-date'",
-                             "errors": validation.validate_state_obj(dict(state, active_l0_sources=[], updated_at="not-a-date"))})
+    words = "one two three four five six seven eight nine ten".split()
+    check("ten-word proof uses two groups of five", proof.first_last_five(" ".join(words)),
+          (words[:5], words[-5:]))
+    check("short proof uses entire section", proof.first_last_five("one two three"),
+          (["one", "two", "three"], ["one", "two", "three"]))
+    cases = [
+        ("ordinary heading", "## Target\nbody\n## Next\nother\n", "Target", ("## Target", 1, 2)),
+        ("indented closed heading", "   ## Target ###\nbody\n  ## Next\nother\n", "Target", ("   ## Target ###", 1, 2)),
+        ("empty sibling", "## Target\nbody\n##\nother\n", "Target", ("## Target", 1, 2)),
+        ("plain line cannot shadow heading", "Target\ntext\n## Target\nbody\n## Next\n", "Target", ("## Target", 3, 4)),
+        ("nested headings", "## Target\nbody\n### Child\nchild\n## Next\n", "Target", ("## Target", 1, 4)),
+        ("CRLF heading", "## Target\r\nbody\r\n## Next\r\n", "Target", ("## Target", 1, 2)),
+        ("literal hash", "## C#\nbody\n## Next\n", "C#", ("## C#", 1, 2)),
+    ]
+    for name, text, selector, expected in cases:
+        check(name, proof.select_markdown_section(text.splitlines(keepends=True), selector)[:3], expected)
+    for fence in ("~~~", "```"):
+        text = f"## Target\none\n{fence}\n## Example\ntwo\n{fence}\nthree\n## Next\n"
+        check("fenced heading " + fence,
+              proof.select_markdown_section(text.splitlines(keepends=True), "Target")[:3],
+              ("## Target", 1, 7))
 
-    ten_words = "one two three four five six seven eight nine ten"
-    check("proof: exactly ten words use two groups of five", proof.first_last_five(ten_words),
-          (ten_words.split()[:5], ten_words.split()[-5:]))
-    short_words = "one two three"
-    check("proof: fewer than ten words returns complete section", proof.first_last_five(short_words),
-          (short_words.split(), short_words.split()))
-    markdown = "## Target\nalpha beta gamma delta epsilon zeta eta theta iota kappa\n## Next\nomega\n"
-    selected = proof.select_markdown_section(markdown.splitlines(keepends=True), "## Target")
-    check("proof: ordinary ATX section boundaries", list(selected[:3]), ["## Target", 1, 2])
-    for fence in ("```", "~~~"):
-        markdown = f"## Target\none two three four five\n{fence}text\n## Example inside code\nsix seven\n{fence}\neight nine ten eleven twelve\n## Next\nend\n"
-        selected = proof.select_markdown_section(markdown.splitlines(keepends=True), "## Target")
-        check(f"proof: {fence} fenced heading stays in section", list(selected[:3]), ["## Target", 1, 7])
-    markdown = "Introduction\nTarget\nThis is body text.\n## Target\nActual section body.\n## Next\nend\n"
-    selected = proof.select_markdown_section(markdown.splitlines(keepends=True), "Target")
-    check("proof: heading-text selector ignores plain body line", list(selected[:3]), ["## Target", 4, 5])
-
-    with tempfile.TemporaryDirectory(prefix="cbg-script-cases-") as directory:
+    with tempfile.TemporaryDirectory(prefix="cbg-plugin-audit-") as directory:
         task_tmp = Path(directory)
-        artifact = task_tmp / "artifact.bin"
-        artifact.write_bytes(b"abc\x00\xff")
-        result = fingerprint.fingerprint(artifact)
-        check("fingerprint: SHA256 and size", [result["size_bytes"], result["sha256"]],
-              [5, hashlib.sha256(artifact.read_bytes()).hexdigest()])
+        source = task_tmp / "source.md"
+        source.write_text("## Target\none two three four five six seven eight nine ten\n## Next\n",
+                          encoding="utf-8-sig")
+        process = subprocess.run([sys.executable, "-B", str(SKILL / "scripts/extract_proof.py"),
+                                  str(source), "--heading", "Target", "--json"],
+                                 cwd=task_tmp, capture_output=True, text=True, encoding="utf-8")
+        check("proof CLI accepts BOM and unrelated cwd", process.returncode, 0)
+        if process.returncode == 0:
+            check("proof CLI span", json.loads(process.stdout)["line_range"], [1, 2])
+        binary = task_tmp / "artifact.bin"
+        binary.write_bytes(bytes([97, 98, 99, 0, 255]))
+        result = fingerprint.fingerprint(binary)
+        check("binary fingerprint hash", result["sha256"], hashlib.sha256(binary.read_bytes()).hexdigest())
+        check("binary fingerprint size", result["size_bytes"], 5)
         missing = task_tmp / "missing.bin"
-        check("fingerprint: missing file reported", fingerprint.fingerprint(missing)["exists"], False)
-        process = subprocess.run([sys.executable, str(SKILL / "scripts/artifact_fingerprint.py"), str(missing)],
-                                 capture_output=True, text=True, encoding="utf-8", cwd=task_tmp)
-        observations.append({"case": "fingerprint CLI missing file", "exit_code": process.returncode,
-                             "result": json.loads(process.stdout)})
-        duplicate = task_tmp / "duplicate-state.json"
-        duplicate.write_text(json.dumps(state).replace('"state_seq": 1', '"state_seq": 0, "state_seq": 1'), encoding="utf-8")
-        parsed = validation.load_json(duplicate)
-        observations.append({"case": "duplicate JSON property", "raw_values": [0, 1],
-                             "parsed_value": parsed["state_seq"], "errors": validation.validate_state_obj(parsed)})
+        process = subprocess.run([sys.executable, "-B", str(SKILL / "scripts/artifact_fingerprint.py"),
+                                  str(missing)], cwd=task_tmp, capture_output=True, text=True, encoding="utf-8")
+        check("missing fingerprint is explicit", json.loads(process.stdout)[0]["exists"], False)
+        observations.append({"case": "missing fingerprint CLI", "exit_code": process.returncode,
+                             "meaning": "Inspect exists; a zero exit code does not establish file existence."})
 
-    original = ROOT / "canon-boundary-guard-gpt"
-    copies = list((original / "scripts").glob("*.py")) + list((original / "schemas").glob("*.json"))
-    check("conversion: script and schema bytes unchanged",
-          all(p.read_bytes() == (SKILL / p.relative_to(original)).read_bytes() for p in copies), True)
-    embedded = json.loads((SKILL / "schemas/CANON_STATE_DELTA.schema.json").read_text())["properties"]["current_state"]
-    check("schemas: embedded state schema matches standalone", embedded,
-          json.loads((SKILL / "schemas/SESSION_STATE.schema.json").read_text()))
-    # Avoid storing the full schemas in the otherwise compact report.
-    checks[-1].update(expected="identical", actual="identical" if checks[-1]["passed"] else "different")
+    for name in ("extract_proof.py", "artifact_fingerprint.py"):
+        check("source copy: " + name, (SKILL / "scripts" / name).read_bytes() ==
+              (ROOT / "canon-boundary-guard-gpt/scripts" / name).read_bytes(), True)
+    check("native script inventory", sorted(p.name for p in (SKILL / "scripts").glob("*.py")),
+          ["artifact_fingerprint.py", "extract_proof.py"])
+
     report = {"python": sys.version.split()[0], "skill_directory": str(SKILL),
-              "backends_exercised": [name for name, _ in backends], "checks": checks,
-              "failed": sum(not item["passed"] for item in checks), "observations": observations,
-              "audit_modifies_bundle": False,
-              "plugin_version": json.loads((ROOT / "plugin/canon-boundary-guard/plugin.json").read_text(encoding="utf-8"))["version"]}
+              "scope": "Native ChatGPT plugin helpers only; no state validator is shipped.",
+              "checks": checks, "failed": sum(not item["passed"] for item in checks),
+              "observations": observations, "audit_modifies_bundle": False,
+              "plugin_version": json.loads((ROOT / "plugin/canon-boundary-guard/plugin.json").read_text())["version"]}
     serialized = json.dumps(report, ensure_ascii=False, indent=2)
     if args.output:
         args.output.write_text(serialized + "\n", encoding="utf-8")

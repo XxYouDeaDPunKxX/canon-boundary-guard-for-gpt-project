@@ -1,9 +1,8 @@
-"""Check conversion fidelity and create the private ChatGPT upload ZIP.
+"""Validate resources and build the personal ChatGPT plugin ZIP.
 
 Run from any directory: python tools/package_plugin.py
-Uses only the Python standard library; never changes the original sources.
+Does not modify source bundles, plugin resources, accounts, or remote repositories.
 """
-
 from pathlib import Path, PurePosixPath
 import difflib
 import hashlib
@@ -13,19 +12,28 @@ import stat
 import unicodedata
 import zipfile
 
-
 ROOT = Path(__file__).resolve().parents[1]
 PLUGIN = ROOT / "plugin/canon-boundary-guard"
-SOURCE = ROOT / "canon-boundary-guard-gpt"
-SKILL = PLUGIN / "skills/canon-boundary-guard-gpt-project"
+SKILL = PLUGIN / "skills/canon-boundary-guard"
 DIST = ROOT / "dist"
-START_PREFIX = (
-    "Use at the start of every ChatGPT conversation or Project session, before "
-    "the first substantive output, and throughout the session as the active "
-    "Canon Boundary Guard posture. "
-)
-BINDING_START = b"## Native plugin binding\n\n"
-BINDING_END = b"<!-- End native plugin binding; original skill body follows unchanged. -->\n\n"
+SOURCE = ROOT / "canon-boundary-guard-gpt"
+
+# Only resources still shipped as exact copies belong in this mapping.
+RESOURCE_SOURCES = {
+    "skills/canon-boundary-guard/scripts/artifact_fingerprint.py":
+        "canon-boundary-guard-gpt/scripts/artifact_fingerprint.py",
+    "skills/canon-boundary-guard/scripts/extract_proof.py":
+        "canon-boundary-guard-gpt/scripts/extract_proof.py",
+    "LICENSE": "LICENSE",
+}
+INSTRUCTION_SOURCES = [
+    "SKILL.md", "references/protocol.md", "references/gpt-project-adapter.md",
+    "references/proof-of-read.md", "references/scratch-canon.md",
+]
+RESOURCE_LINK = re.compile(r"(?<![\w/])(?:references|schemas|scripts|agents)/[A-Za-z0-9_./-]+")
+RETIRED_RUNTIME = re.compile(
+    r"SESSION_STATE|CANON_STATE_DELTA|SESSION_INSTRUCTIONS|PROJECT_CUSTOM_INSTRUCTIONS|"
+    r"gpt-project-adapter|Project Sources|Project Instructions|fresh install", re.I)
 
 
 def require(condition, message):
@@ -38,75 +46,74 @@ def sha256(data):
 
 
 def main():
-    original = (SOURCE / "SKILL.md").read_bytes()
-    converted = (SKILL / "SKILL.md").read_bytes()
-    require(converted.count(BINDING_START) == 1, "Expected one native binding")
-    require(converted.count(BINDING_END) == 1, "Expected one binding end")
-    start = converted.index(BINDING_START)
-    end = converted.index(BINDING_END) + len(BINDING_END)
-    restored = converted[:start] + converted[end:]
-    prefix = b"description: " + START_PREFIX.encode("utf-8")
-    require(restored.count(prefix) == 1, "Missing session-start description")
-    restored = restored.replace(prefix, b"description: ", 1)
-    require(restored == original, "Original SKILL content changed beyond the binding and description")
+    records = []
+    for relative, source_relative in RESOURCE_SOURCES.items():
+        source, target = ROOT / source_relative, PLUGIN / relative
+        before, after = source.read_bytes(), target.read_bytes()
+        require(before == after, f"Source copy differs: {target}")
+        records.append({"source": source_relative, "target": relative, "mode": "identical",
+                        "source_sha256": sha256(before), "target_sha256": sha256(after)})
 
-    mappings = [(p, SKILL / p.relative_to(SOURCE)) for p in sorted(SOURCE.rglob("*"))
-                if p.is_file() and p.name != "SKILL.md"]
-    mappings += [(ROOT / "PROJECT_CUSTOM_INSTRUCTIONS.txt", SKILL / "PROJECT_CUSTOM_INSTRUCTIONS.txt"),
-                 (ROOT / "LICENSE", PLUGIN / "LICENSE")]
-    copies = []
-    for source, target in mappings:
-        data = source.read_bytes()
-        require(data == target.read_bytes(), f"Source copy differs: {target}")
-        copies.append({"source": source.relative_to(ROOT).as_posix(),
-                       "target": target.relative_to(PLUGIN).as_posix(), "sha256": sha256(data)})
+    converted = (SKILL / "SKILL.md").read_bytes()
+    text = converted.decode("utf-8")
+    require(not RETIRED_RUNTIME.search(text), "Retired session/Project dependency in native instructions")
+    require({p.relative_to(SKILL).as_posix() for p in SKILL.rglob("*.md")} == {"SKILL.md"},
+            "The complete posture must have one instruction entrypoint")
+    inspected_links = []
+    for relative in sorted(set(RESOURCE_LINK.findall(text))):
+        relative = relative.rstrip(".")
+        target = (SKILL / relative).resolve()
+        require(target.is_relative_to(SKILL.resolve()) and target.is_file(),
+                f"Unresolved resource reference: {relative}")
+        inspected_links.append({"document": "SKILL.md", "resource": relative})
 
     native = json.loads((PLUGIN / "plugin.json").read_text(encoding="utf-8"))
-    compat = json.loads((PLUGIN / ".codex-plugin/plugin.json").read_text(encoding="utf-8"))
-    require(native["$schema"] == "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json", "Wrong manifest schema")
-    for key in ("name", "version", "description", "author", "repository", "license"):
-        require(native[key] == compat[key], f"Manifests disagree on {key}")
-    require(native["extensions"]["com.openai"]["interface"] == compat["interface"], "Interface mismatch")
+    require(native["$schema"] == "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+            "Wrong manifest schema")
     require(native["name"] == PLUGIN.name, "Plugin directory/name mismatch")
-    require(compat["skills"] == "./skills/", "Wrong skill directory")
     require(re.fullmatch(r"[a-z0-9-]{1,64}", native["name"]), "Invalid plugin name")
     require(re.fullmatch(r"\d+\.\d+\.\d+", native["version"]), "Invalid version")
     require(len(native["description"]) <= 1024, "Plugin description too long")
-    frontmatter = converted.decode("utf-8").split("---", 2)[1]
-    skill_name = re.search(r"^name: (.+)$", frontmatter, re.M).group(1)
-    description = re.search(r"^description: (.+)$", frontmatter, re.M).group(1)
+    normalized = "\n".join(text.splitlines())
+    require(normalized.startswith("---\n"), "Missing skill frontmatter")
+    sections = normalized.split("---", 2)
+    require(len(sections) == 3 and sections[2].strip(), "Missing skill body")
+    frontmatter = sections[1]
+    name_match = re.search(r"^name: (.+)$", frontmatter, re.M)
+    description_match = re.search(r"^description: (.+)$", frontmatter, re.M)
+    require(name_match and description_match, "Missing skill name or description")
+    skill_name, description = name_match.group(1), description_match.group(1)
     require(skill_name == SKILL.name, "Skill name/directory mismatch")
     require(len(f"{native['name']}:{skill_name}") <= 64, "Qualified skill name too long")
-    require(len(description) <= 1024, "Skill description too long")
+    require(0 < len(description) <= 1024, "Invalid skill description length")
 
     paths = sorted(PLUGIN.rglob("*"))
-    require(not any(p.is_symlink() for p in paths), "Symlinks cannot be packaged")
-    files = [p for p in paths if p.is_file()]
-    expected = {t.relative_to(PLUGIN).as_posix() for _, t in mappings}
-    expected.update({"plugin.json", ".codex-plugin/plugin.json", "README.md",
-                     "skills/canon-boundary-guard-gpt-project/SKILL.md",
-                     "skills/canon-boundary-guard-gpt-project/agents/openai.yaml"})
-    require({p.relative_to(PLUGIN).as_posix() for p in files} == expected, "Unexpected or missing package files")
-    inventory = {}
-    names = set()
+    require(not any(path.is_symlink() for path in paths), "Symlinks cannot be packaged")
+    files = [path for path in paths if path.is_file()]
+    expected = set(RESOURCE_SOURCES)
+    expected.update({"plugin.json", "README.md", "skills/canon-boundary-guard/SKILL.md",
+                     "skills/canon-boundary-guard/agents/openai.yaml"})
+    require({path.relative_to(PLUGIN).as_posix() for path in files} == expected,
+            "Unexpected or missing package files")
+    inventory, names = {}, set()
     for path in files:
         name = f"{PLUGIN.name}/{path.relative_to(PLUGIN).as_posix()}"
         parts = PurePosixPath(name).parts
         require(not name.startswith("/") and "\\" not in name and ".." not in parts, "Unsafe ZIP path")
         require(len(parts) <= 20, "ZIP path too deep")
-        normalized = unicodedata.normalize("NFC", name).casefold()
-        require(normalized not in names, "Duplicate normalized ZIP entry")
-        names.add(normalized)
+        normalized_name = unicodedata.normalize("NFC", name).casefold()
+        require(normalized_name not in names, "Duplicate normalized ZIP entry")
+        names.add(normalized_name)
         inventory[name] = sha256(path.read_bytes())
     require(len(files) <= 5000, "Too many ZIP entries")
-    require(sum(p.stat().st_size for p in files) <= 512 * 1024 * 1024, "Uncompressed package too large")
+    require(sum(path.stat().st_size for path in files) <= 512 * 1024 * 1024, "Uncompressed package too large")
 
     DIST.mkdir(exist_ok=True)
     archive = DIST / f"{native['name']}-{native['version']}.zip"
     with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as output:
         for path in files:
             name = f"{PLUGIN.name}/{path.relative_to(PLUGIN).as_posix()}"
-            info = zipfile.ZipInfo(name, date_time=(2026, 9, 22, 0, 0, 0))
+            info = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
             info.create_system = 3
             info.external_attr = (stat.S_IFREG | 0o644) << 16
             info.compress_type = zipfile.ZIP_DEFLATED
@@ -118,20 +125,24 @@ def main():
         for name, digest in inventory.items():
             require(sha256(zipped.read(name)) == digest, f"ZIP content mismatch: {name}")
 
-    diff = "".join(difflib.unified_diff(original.decode("utf-8").splitlines(keepends=True),
-                                       converted.decode("utf-8").splitlines(keepends=True),
-                                       fromfile="original/canon-boundary-guard-gpt/SKILL.md",
-                                       tofile="plugin/skills/canon-boundary-guard-gpt-project/SKILL.md"))
-    (DIST / "SKILL.diff").write_text(diff, encoding="utf-8", newline="\n")
+    original = (SOURCE / "SKILL.md").read_bytes()
+    skill_diff = "".join(difflib.unified_diff(original.decode("utf-8").splitlines(keepends=True),
+                                             text.splitlines(keepends=True),
+                                             fromfile="source/SKILL.md", tofile="native/SKILL.md"))
+    (DIST / "SKILL.diff").write_text(skill_diff, encoding="utf-8", newline="\n")
     report = {"plugin": native["name"], "version": native["version"],
               "archive": archive.name, "archive_sha256": sha256(archive.read_bytes()),
-              "archive_bytes": archive.stat().st_size, "byte_identical_copies": copies,
-              "skill_original_sha256": sha256(original), "skill_converted_sha256": sha256(converted),
-              "original_skill_reconstructed_exactly": True, "archive_files": inventory,
+              "archive_bytes": archive.stat().st_size, "source_mapping": records,
+              "consolidated_instruction_sources": [
+                  {"source": (SOURCE / p).relative_to(ROOT).as_posix(),
+                   "sha256": sha256((SOURCE / p).read_bytes())} for p in INSTRUCTION_SOURCES],
+              "runtime_scope": "current conversation; no cross-conversation state subsystem",
+              "resolved_resource_links": inspected_links, "archive_files": inventory,
               "chatgpt_import_tested": False, "chatgpt_session_start_tested": False}
     (DIST / "manifest.sha256.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({"archive": str(archive), "files": len(files),
-                      "byte_identical_copies": len(copies), "skill_fidelity": "passed",
+                      "byte_identical_resources": len(records),
+                      "resolved_resource_links": len(inspected_links),
                       "archive_bytes": archive.stat().st_size, "archive_sha256": report["archive_sha256"]}, indent=2))
 
 

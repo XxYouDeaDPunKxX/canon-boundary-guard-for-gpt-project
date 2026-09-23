@@ -1,10 +1,12 @@
-"""Behavioral regressions for the source bundle and its native plugin copy.
+"""Behavioral regressions for the original source bundle and its shared helpers.
 
 Run: python -B -m unittest discover -s tests -v
-Set CBG_TEST_BUNDLE to test an extracted/installed skill instead of the source.
+Set CBG_TEST_BUNDLE to test an extracted original source bundle.
+The smaller native plugin is exercised by test_plugin_package.py.
 """
 
 import importlib.util
+from decimal import Decimal
 import json
 import os
 from pathlib import Path
@@ -80,6 +82,34 @@ class ValidationCases:
                 malformed = dict(state(), **changes)
                 self.assertTrue(validation.validate_state_obj(malformed))
 
+    def test_json_loader_preserves_fractional_sequence_values(self):
+        with tempfile.TemporaryDirectory(prefix="cbg-exact-json-") as directory:
+            path = Path(directory) / "state.json"
+            for token in ("1.0000000000000001", "0.99999999999999999", "1e-1000"):
+                with self.subTest(token=token):
+                    path.write_text(json.dumps(state()).replace('"state_seq": 1', '"state_seq": ' + token), encoding="utf-8")
+                    self.assertTrue(validation.validate_state_obj(validation.load_json(path)))
+
+    def test_json_loader_keeps_large_exponents_compact(self):
+        with tempfile.TemporaryDirectory(prefix="cbg-exact-json-") as directory:
+            path = Path(directory) / "state.json"
+            path.write_text(json.dumps(state()).replace('"state_seq": 1', '"state_seq": 1e1000000'), encoding="utf-8")
+            loaded = validation.load_json(path)
+            self.assertIsInstance(loaded['state_seq'], Decimal)
+            self.assertEqual(loaded['state_seq'].as_tuple().exponent, 1000000)
+            self.assertEqual(validation.validate_state_obj(loaded), [])
+
+    def test_json_loader_preserves_large_integer_delta_equality(self):
+        with tempfile.TemporaryDirectory(prefix="cbg-exact-json-") as directory:
+            path = Path(directory) / "delta.json"
+            sequence = 9007199254740993
+            for snapshot_seq in (sequence, sequence - 1):
+                with self.subTest(snapshot_seq=snapshot_seq):
+                    text = json.dumps(delta(sequence, snapshot_seq)).replace('"seq": 9007199254740993', '"seq": 9007199254740993.0')
+                    path.write_text(text, encoding="utf-8")
+                    errors = validation.validate_delta_obj(validation.load_json(path))
+                    self.assertEqual(bool(errors), snapshot_seq != sequence)
+
 
 class FallbackValidation(ValidationCases, unittest.TestCase):
     def setUp(self):
@@ -141,14 +171,78 @@ class ProofExtraction(unittest.TestCase):
         self.assertEqual(self.select(text, "Target")[:3], ("## Target", 4, 5))
 
     def test_missing_heading_is_an_error(self):
-        with self.assertRaises(ValueError):
-            self.select("## Other\nbody\n")
+        for text in ("", "## Other\nbody\n"):
+            with self.subTest(text=text), self.assertRaises(ValueError):
+                self.select(text)
+
+    def test_indented_atx_headings_end_the_previous_section(self):
+        for indent in ("", " ", "  ", "   "):
+            with self.subTest(indent=indent):
+                text = f"## Target\nalpha beta gamma delta epsilon\n{indent}## Next\nwrong section tail belongs elsewhere\n"
+                selected = self.select(text)
+                self.assertEqual(selected[:3], ("## Target", 1, 2))
+                self.assertEqual(proof.first_last_five(selected[3])[1],
+                                 ["##", "Target", "alpha", "beta", "gamma", "delta", "epsilon"])
+
+    def test_empty_atx_heading_ends_the_previous_section(self):
+        for ending in ("##", "   ##", "##\t", "## ###"):
+            with self.subTest(ending=ending):
+                self.assertEqual(self.select(f"## Target\nbody\n{ending}\nnext body\n")[:3],
+                                 ("## Target", 1, 2))
+
+    def test_indented_and_closed_heading_selected_by_text_preserves_exact_heading(self):
+        for heading in ("   ## Target", " ## Target ###", "##\tTarget\t###\t"):
+            with self.subTest(heading=heading):
+                text = f"{heading}\nbody\n## Next\n"
+                for selector in ("Target", heading):
+                    self.assertEqual(self.select(text, selector)[:3], (heading, 1, 2))
+
+    def test_non_atx_lines_do_not_end_a_section(self):
+        for line in ("    ## code indentation", "##no-space", "####### too-many", "##\u00a0not-a-separator"):
+            with self.subTest(line=line):
+                self.assertEqual(self.select(f"## Target\nbody\n{line}\nstill body\n## Next\n")[:3],
+                                 ("## Target", 1, 4))
+
+    def test_heading_selection_accepts_crlf_without_returning_carriage_return(self):
+        text = "## Target\r\nbody\r\n## Next\r\n"
+        self.assertEqual(self.select(text)[:3], ("## Target", 1, 2))
+
+    def test_literal_hashes_in_heading_text_are_preserved(self):
+        for heading, selector in (("## C#", "C#"), ("## Target###", "Target###"),
+                                  ("## Target \\###", "Target \\###")):
+            with self.subTest(heading=heading):
+                self.assertEqual(self.select(f"{heading}\nbody\n## Next\n", selector)[:3],
+                                 (heading, 1, 2))
 
 
 class CliAndFiles(unittest.TestCase):
     def run_script(self, name, directory, *arguments):
         return subprocess.run([sys.executable, "-B", "-X", "utf8", str(BUNDLE / "scripts" / name), *map(str, arguments)],
                               cwd=directory, capture_output=True, text=True, encoding="utf-8")
+
+    def test_proof_cli_distinguishes_no_lines_from_existing_blank_lines(self):
+        cases = [(b"", None, 0), (b"\xef\xbb\xbf", None, 0),
+                 (b"\n", [1, 1], 0), (b" \n\n", [1, 2], 0),
+                 (b"one", [1, 1], 1)]
+        with tempfile.TemporaryDirectory(prefix="cbg-empty-proof-") as directory:
+            path = Path(directory) / "source.md"
+            for data, span, word_count in cases:
+                with self.subTest(data=data):
+                    path.write_bytes(data)
+                    result = self.run_script("extract_proof.py", directory, path, "--json")
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    report = json.loads(result.stdout)
+                    self.assertEqual(report["source"], str(path))
+                    self.assertEqual(report["heading"], "FULL_FILE")
+                    self.assertEqual(report["line_range"], span)
+                    self.assertEqual(report["word_count"], word_count)
+                    self.assertEqual(report["first_5_words"], ["one"] if word_count else [])
+                    self.assertEqual(report["last_5_words"], ["one"] if word_count else [])
+                    plain = self.run_script("extract_proof.py", directory, path)
+                    self.assertEqual(plain.returncode, 0, plain.stderr)
+                    expected = "none (empty file)" if span is None else f"{span[0]}-{span[1]}"
+                    self.assertIn("line_range: " + expected, plain.stdout.splitlines())
+                    self.assertEqual(path.read_bytes(), data)
 
     def test_schema_paths_and_bom_work_from_unrelated_directory(self):
         with tempfile.TemporaryDirectory(prefix="cbg-regression-") as directory:

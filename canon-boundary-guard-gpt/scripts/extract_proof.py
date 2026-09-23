@@ -3,6 +3,7 @@
 
 For Markdown, --heading selects a heading exactly as written, including # marks
 or by heading text if an exact full-heading match is not found.
+Files with no text lines have no line range (null in JSON).
 """
 from __future__ import annotations
 
@@ -24,8 +25,14 @@ def first_last_five(text: str) -> tuple[list[str], list[str]]:
 
 
 def heading_level(line: str) -> int | None:
-    m = re.match(r"^(#{1,6})\s+", line)
+    m = re.match(r"^ {0,3}(#{1,6})(?:[ \t]+|$)", line.rstrip("\r\n"))
     return len(m.group(1)) if m else None
+
+
+def heading_text(line: str) -> str:
+    """Remove ATX delimiters for lookup, keeping literal/escaped hashes."""
+    text = re.sub(r"^ {0,3}#{1,6}(?=[ \t]|$)", "", line.rstrip("\r\n"))
+    return re.sub(r"[ \t]+#+[ \t]*$", "", text).strip(" \t")
 
 
 def markdown_heading_levels(lines: list[str]) -> list[int | None]:
@@ -52,8 +59,10 @@ def markdown_heading_levels(lines: list[str]) -> list[int | None]:
     return levels
 
 
-def select_markdown_section(lines: list[str], heading: str | None) -> tuple[str, int, int, str]:
+def select_markdown_section(lines: list[str], heading: str | None) -> tuple[str, int | None, int | None, str]:
     if not heading:
+        if not lines:
+            return "FULL_FILE", None, None, ""
         return "FULL_FILE", 1, len(lines), "".join(lines)
 
     # Try exact line match first, then heading text match.
@@ -62,17 +71,16 @@ def select_markdown_section(lines: list[str], heading: str | None) -> tuple[str,
     levels = markdown_heading_levels(lines)
 
     for i, line in enumerate(lines):
-        stripped = line.rstrip("\n")
+        stripped = line.rstrip("\r\n")
         if levels[i] is not None and stripped == heading:
             start_idx = i
             start_level = levels[i]
             break
 
     if start_idx is None:
-        wanted = heading.strip().lstrip("#").strip()
+        wanted = heading_text(heading) if heading_level(heading) is not None else heading.strip()
         for i, line in enumerate(lines):
-            stripped = line.rstrip("\n")
-            if levels[i] is not None and stripped.lstrip("#").strip() == wanted:
+            if levels[i] is not None and heading_text(line) == wanted:
                 start_idx = i
                 start_level = levels[i]
                 break
@@ -87,7 +95,7 @@ def select_markdown_section(lines: list[str], heading: str | None) -> tuple[str,
             end_idx = j
             break
 
-    return lines[start_idx].rstrip("\n"), start_idx + 1, end_idx, "".join(lines[start_idx:end_idx])
+    return lines[start_idx].rstrip("\r\n"), start_idx + 1, end_idx, "".join(lines[start_idx:end_idx])
 
 
 def main() -> int:
@@ -109,7 +117,7 @@ def main() -> int:
     report = {
         "source": str(args.path),
         "heading": heading,
-        "line_range": [start, end],
+        "line_range": None if start is None else [start, end],
         "first_5_words": first5,
         "last_5_words": last5,
         "word_count": len(words(section)),
@@ -120,7 +128,8 @@ def main() -> int:
     else:
         print(f"source: {report['source']}")
         print(f"heading: {report['heading']}")
-        print(f"line_range: {start}-{end}")
+        span = "none (empty file)" if start is None else f"{start}-{end}"
+        print(f"line_range: {span}")
         print("first_5_words: " + " ".join(first5))
         print("last_5_words: " + " ".join(last5))
         print(f"word_count: {report['word_count']}")

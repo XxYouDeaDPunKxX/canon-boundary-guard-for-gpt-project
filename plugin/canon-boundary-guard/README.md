@@ -1,45 +1,102 @@
-# Canon Boundary Guard — plugin personale per ChatGPT
+# Canon Boundary Guard — ChatGPT plugin
 
-Conversione documentale di [Canon Boundary Guard for GPT Projects](https://github.com/xxyoudeadpunkxx/canon-boundary-guard-for-gpt-project), di XxYouDeaDPunKxX. Versione del pacchetto: **0.1.1**. Versione del protocollo originale: **1.1**, invariata.
+A personal documentary plugin by **XxYouDeaDPunKxX**.
+Version: **0.3.2**.
 
-## Importazione privata
+Canon Boundary Guard applies a provenance posture throughout a ChatGPT
+conversation. It separates inspected evidence, discussion, explicitly authorized
+changes, instructions to the assistant, and unverified assumptions before they
+enter reusable answers or artifacts.
 
-In ChatGPT web, aprire **Plugin → Crea app**, scegliere lo ZIP del plugin e completare **Aggiungi plugin**. Questo è il percorso osservato nell'account durante la preparazione; non è la creazione di un'app MCP. Dopo l'importazione, aprire una nuova conversazione con il plugin disponibile.
+## Personal import
 
-Il pacchetto richiede che la postura completa sia attiva dall'inizio, prima della prima risposta sostanziale. La descrizione della skill espone questo requisito e l'invocazione implicita è consentita. Non è previsto un comando manuale di attivazione.
+From the repository root, build with `python tools/package_plugin.py`.
+In ChatGPT web, open the plugin creation dialog from the Plugins page, upload
+`dist/canon-boundary-guard-0.3.2.zip`, and complete the add-plugin flow.
+Use the generated plugin archive rather than a ZIP of the repository.
 
-**Limite della verifica:** questo archivio è stato preparato e controllato localmente. L'importazione e l'attivazione implicita nella prima risposta di ChatGPT devono ancora essere provate nell'account. Il caricamento delle skill è gestito da ChatGPT: una descrizione non costituisce un hook tecnico che ne garantisca l'esecuzione. Se il bootstrap non avviene prima della prima risposta sostanziale, il requisito di avvio non è soddisfatto.
+Activate Canon Boundary Guard through your ChatGPT custom instructions or
+explicitly select/tag the plugin in the first message of a new conversation.
+For custom instructions, use:
 
-## Cosa contiene
+> Use Canon Boundary Guard from the start of every conversation. Read its complete
+> skill before the first substantive response and apply it throughout the chat.
 
-- `plugin.json`: manifest portabile con metadati OpenAI.
-- `.codex-plugin/plugin.json`: manifest di compatibilità con la stessa identità.
-- `skills/canon-boundary-guard-gpt-project/`: skill nativa, istruzioni originali, cinque riferimenti, due schemi e tre script sincronizzati con il bundle sorgente.
-- `LICENSE`: licenza originale CC BY-SA 4.0.
+Once loaded, the complete posture applies before the first substantive response
+and remains active throughout the chat. No initialization declaration or
+working file is required.
 
-La skill conserva nome e testo originale. Le sole modifiche alla skill sono il richiamo all'avvio nella descrizione e la sezione **Native plugin binding**, che collega i vecchi percorsi del bundle alle risorse installate. Le istruzioni di progetto sono incluse integralmente e devono essere lette nel bootstrap. Riferimenti, schemi, script e istruzioni di progetto sono copie byte per byte del bundle sorgente aggiornato.
+The skill metadata targets `CHAT` and permits implicit invocation. The
+description is not an executable session-start hook: installation alone does
+not establish that the skill was loaded. Activation through custom instructions
+or an explicit tag is the supported setup here.
 
-La versione 0.1.1 include le stesse correzioni applicate ai sorgenti: gestione coerente degli interi JSON nel validatore, controllo della sequenza del delta anche per `1.0`, esclusione delle intestazioni nei blocchi di codice, selezione delle intestazioni effettive e soglia corretta per le sezioni di dieci parole. Gli schemi e le regole del protocollo restano invariati.
+## Operating scope
 
-La conversione rende la postura applicabile anche alle conversazioni ChatGPT fuori dai Projects. Le funzioni specifiche dei Projects continuano a indicare quelle superfici reali. I percorsi `/mnt/data` conservano il significato originale.
+The complete rules are in
+[SKILL.md](skills/canon-boundary-guard/SKILL.md). Ordinary conversation needs no
+status announcement. Reusable content receives the applicable provenance,
+authorization, proof, and label checks.
 
-Le regole di stato, recupero, gate, prova di lettura, approvazione e le quattro etichette restano quelle del progetto. Installare il plugin non dichiara automaticamente un nuovo stato e non autorizza reset o ricostruzioni. Gli script restano controlli meccanici facoltativi secondo le condizioni originali.
+Explicit approval remains valid within its scope across turns of the current
+conversation. The plugin does not carry decisions between conversations.
+Previously supplied material is assessed through its actual contents and
+available authorization; there is no automatic continuity or recovery process.
 
-## Verifica dopo l'importazione
+Missing evidence blocks the output that depends on it. It does not disable
+unrelated work. A generated draft or an unchecked saved artifact does not become
+evidence for its own claims merely because it is read again.
 
-In una nuova conversazione, con il plugin disponibile, inviare un normale primo messaggio senza nominarlo. Verificare che ChatGPT carichi la skill, legga le istruzioni e i riferimenti obbligatori e svolga lo Status Check prima dell'output sostanziale. Controllare poi che applichi le condizioni originali quando mancano fonti o stato valido e quando un risultato richiede persistenza. L'assenza di stato non va risolta dichiarando automaticamente una nuova installazione.
+## Included files
 
-Questi controlli verificano il requisito originale; non introducono un'attivazione in fasi.
+```text
+canon-boundary-guard/
+  plugin.json
+  LICENSE
+  README.md
+  skills/canon-boundary-guard/
+    SKILL.md
+    agents/openai.yaml
+    scripts/
+      extract_proof.py
+      artifact_fingerprint.py
+```
 
-## Fonti del formato
+The optional helpers extract textual proof and compute file fingerprints.
+They use Python's standard library. Python and accessible files are needed to
+execute them; the posture also supports other mechanical inspection tools.
+Their implementation need not be read during ordinary conversation.
+For a file with no text lines, the proof helper reports `line_range: null`,
+zero words and empty word lists. Its text output says `none (empty file)`.
 
-- [Formato dei plugin](https://developers.openai.com/plugins/build/plugins)
-- [Caricamento delle skill](https://developers.openai.com/plugins/concepts/skills)
-- [Plugin in ChatGPT web](https://learn.chatgpt.com/docs/plugins?surface=web)
-- [Controlli sui pacchetti](https://developers.openai.com/plugins/deploy/submission-errors)
+## Verification
 
-## Attribuzione e modifiche
+The repository tests cover packaging, resource references, unchanged helper
+copies, archive contents, and execution of extracted helpers from another
+working directory. Run `python -B -X utf8 tools/verify_plugin.py` from the
+repository root to generate local test logs and package results in `dist/`.
+These checks do not establish ChatGPT's loading or instruction-following behavior.
 
-Autore del progetto originale: **XxYouDeaDPunKxX**. Sorgente: repository collegato sopra. Licenza: **Creative Commons Attribution-ShareAlike 4.0 International**, testo integrale in `LICENSE` e [testo ufficiale della licenza](https://creativecommons.org/licenses/by-sa/4.0/).
+To verify the installed plugin, activate it in a new ChatGPT web conversation
+through custom instructions or an explicit tag. Check that the complete skill
+is read before substantive output, then exercise source-based reusable output,
+an authorized change, an unapproved addition, and unavailable evidence. A claim
+that the skill is active is not evidence that the required reads or checks ran.
 
-Modifiche del 22 settembre 2026: manifest, disposizione nativa delle risorse, descrizione di avvio, sezione di collegamento nel `SKILL.md`, metadati della skill e questo README; correzioni di `validate_state.py` ed `extract_proof.py` condivise con il bundle sorgente. Nessuna riscrittura delle regole originali. Il pacchetto mantiene la stessa licenza.
+## Attribution
+
+Adapted from [Canon Boundary Guard](https://github.com/xxyoudeadpunkxx/canon-boundary-guard-for-gpt-project)
+by **XxYouDeaDPunKxX**, under **CC BY-SA 4.0**. The [license](LICENSE) is included.
+
+Changes dated September 23, 2026: conversation-scoped operation, consolidated
+instructions, removal of continuity bookkeeping and its implementation,
+retained proof/hash helpers, and mechanical output checks replacing linguistic
+decontamination heuristics. The original source distribution remains
+separate in the repository.
+
+Version 0.3.2 corrects the proof helper's empty-file range. Posture instructions
+and authorization rules are unchanged.
+
+Format references: [plugin packaging](https://developers.openai.com/plugins/build/plugins),
+[skill loading](https://developers.openai.com/plugins/concepts/skills),
+and [package validation](https://developers.openai.com/plugins/deploy/submission-errors).

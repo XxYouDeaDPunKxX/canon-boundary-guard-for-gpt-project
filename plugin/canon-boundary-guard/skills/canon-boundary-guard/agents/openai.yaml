@@ -1,5 +1,6 @@
 interface:
-  display_name: "Canon Boundary Guard for GPT Projects"
+  display_name: "Canon Boundary Guard"
   short_description: "Provenance posture active from session start"
 policy:
+  products: [CHAT]
   allow_implicit_invocation: true

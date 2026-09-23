@@ -2,94 +2,87 @@
   <img src="./assets/ChatGPT Image 23 mag 2026, 19_38_50.png" alt="ChatGPT Image 23 mag 2026, 19_38_50" width="100%">
 </p>
 
-# 🛡️ Canon Boundary Guard for GPT Projects
+# 🛡️ Canon Boundary Guard
 
-Canon Boundary Guard for GPT Projects is a source-bundle frame for ChatGPT.
+Canon Boundary Guard is a provenance posture for ChatGPT. It keeps inspected
+sources, conversation material, authorized changes, instructions to the
+assistant, and unverified assumptions distinguishable before they enter
+reusable answers or artifacts.
 
-It helps ChatGPT keep project files, chat context, project instructions,
-operator instructions, working assumptions, and generated drafts separated
-during long or complex sessions.
+This repository provides two formats:
 
-The original source-bundle distribution works by combining Project Instructions
-with a zipped folder added to the Project files. You can also use it manually in
-a normal chat by uploading the bundle and asking ChatGPT to inspect it, but a
-Project gives the frame a more stable place to live.
+| Format | Where to use it | What it includes |
+| --- | --- | --- |
+| [ChatGPT plugin](plugin/canon-boundary-guard/README.md) · **0.3.2** | ChatGPT web conversations | One complete skill and two optional Python helpers. Operates within the current conversation, without session-state or recovery files. |
+| [GPT Project bundle](canon-boundary-guard-gpt/SKILL.md) | A ChatGPT Project, with Project instructions | The original source bundle, including its state, schema, and recovery workflow. |
 
-The repository also includes a native ChatGPT plugin distribution in
-[`plugin/canon-boundary-guard/`](plugin/canon-boundary-guard/README.md).
-It carries the same protocol and session-start posture, with installed-resource
-bindings instead of the source-bundle upload path. Plugin version **0.1.1**
-includes the corrected Python helpers; protocol version **1.1** is unchanged.
+The plugin carries the posture into ordinary web chats. The Project bundle
+retains its original operating rules; shared helper fixes apply to both formats.
 
 ## 🔎 What It Does
 
 In a long session, many things can start looking equally important:
 
-- files already attached to the Project
+- files attached to a chat or Project
 - things said in the current chat
 - older project memory or moved chats
 - instructions that tell ChatGPT how to behave
 - assumptions made by the model
 - drafts generated during the session
 
-Canon Boundary Guard gives ChatGPT a frame for keeping those layers separate
-before something becomes reusable material.
+Canon Boundary Guard applies throughout the conversation, from the first
+substantive response. Its checks become visible when material is about to cross
+into reusable output.
 
 The main goal is simple: a chat message, draft, assumption, or generated file
 should not silently become canon.
 
 ## 📦 Install
 
-Native plugin setup:
+### ChatGPT web plugin
 
-1. Run `python tools/package_plugin.py` from this repository.
-2. In ChatGPT web, open **Plugin → Crea app** and upload
-   `dist/canon-boundary-guard-0.1.1.zip`.
-3. Complete **Aggiungi plugin** and start a new conversation with the plugin available.
+1. Download or clone this repository, then run `python tools/package_plugin.py`
+   from its root.
+2. In ChatGPT web, open the plugin creation dialog from the Plugins page and upload
+   `dist/canon-boundary-guard-0.3.2.zip`.
+3. Complete the add-plugin flow. Activate Canon Boundary Guard through your
+   ChatGPT custom instructions or explicitly select/tag the plugin in the first
+   message of a new conversation.
 
-The full posture is required before the first substantive output. Import and
-implicit startup in ChatGPT still need an account-level test; local packaging
-and script tests do not establish that behavior. See the
-[plugin README](plugin/canon-boundary-guard/README.md) for the binding and test criteria.
+For custom instructions, use:
 
-Recommended Project setup:
+> Use Canon Boundary Guard from the start of every conversation. Read its complete
+> skill before the first substantive response and apply it throughout the chat.
 
-1. Create a zip from this folder:
+Upload the generated plugin archive. Once loaded, the complete posture stays
+active throughout the conversation; no initialization declaration or state file
+is needed. The package description is not a session-start hook, so installation
+alone does not establish that the skill was loaded. See the
+[plugin README](plugin/canon-boundary-guard/README.md) for scope and verification.
 
-```text
-canon-boundary-guard-gpt/
-```
+### GPT Project bundle
 
-2. Add that zip to your ChatGPT Project files or sources.
+1. Create a ZIP containing the `canon-boundary-guard-gpt/` folder.
+2. Add that ZIP to your ChatGPT Project files or sources.
+3. Copy [PROJECT_CUSTOM_INSTRUCTIONS.txt](PROJECT_CUSTOM_INSTRUCTIONS.txt) into
+   the Project instructions.
+4. Start a new chat inside the Project.
 
-3. Copy the contents of:
+The ZIP contains the frame. The Project instructions tell ChatGPT to open it,
+inspect it, and use it for the session. The bundle's state and recovery rules
+remain part of this format; see the technical notes below.
 
-```text
-PROJECT_CUSTOM_INSTRUCTIONS.txt
-```
-
-4. Paste them into the Project instructions.
-
-5. Start a new chat inside the Project.
-
-The zip contains the frame. The Project instructions tell ChatGPT to open it,
-inspect it, and use it as the operating frame for the session.
-
-Manual chat setup:
-
-1. Upload the same zip in a normal ChatGPT conversation.
-2. Ask ChatGPT to inspect the bundle and use it as the active frame for the
-   session.
-
-Manual use is less stable than a Project because the instruction anchor is only
-inside the conversation.
+For manual use of the source bundle in an ordinary chat, upload the same ZIP and
+ask ChatGPT to inspect it and use it as the active frame. That puts the instruction
+anchor inside the conversation instead of the Project instructions.
 
 ## ▶️ Use
 
 Use the Project or chat normally.
 
-When the frame is active, ChatGPT should inspect the bundle before substantive
-work and separate:
+With the plugin, ChatGPT reads the complete skill; with the Project bundle, it
+inspects the bundle required by the Project instructions. In both cases, it
+should separate:
 
 - inspected evidence
 - chat material
@@ -100,19 +93,20 @@ work and separate:
 For ordinary conversation, it should stay quiet.
 
 It should surface when something starts crossing a boundary: a hypothesis starts
-acting like a premise, a draft starts acting like a decision, or a saved answer,
-reusable document, Project Source, Canvas/document output, state file, recovery
-material, or promoted artifact starts becoming saved or reusable material.
+acting like a premise, a draft starts acting like a decision, or content is being
+prepared for a reusable answer, file, document, or Canvas output. The Project
+bundle also checks Project Source promotion and state or recovery operations.
 
 ## ⚠️ Limits
 
-This package cannot block every answer, save, file action, or UI action. It
-only defines what should be recognized as canon.
+Both formats are documentary instructions. They define what should be
+recognized as canon; they cannot enforce every answer, save, file action, or UI
+action. ChatGPT can still skip instructions, lose context, or fail to inspect a
+source.
 
-A Project is the recommended container. A normal chat can use the bundle too,
-but continuity is weaker.
-
-The frame reduces silent promotion. It is not a guarantee.
+The plugin carries no decision record between conversations. The Project
+bundle's working state is not durable by itself and requires its explicit
+recovery workflow. Neither format guarantees correctness.
 
 ## 🤖 AI-assisted development
 
@@ -137,19 +131,29 @@ See [LICENSE](LICENSE).
 
 ## 🧱 Package Structure
 
-Published unit:
+The ChatGPT plugin packages these seven files:
 
 ```text
-canon-boundary-guard-gpt/
+plugin/canon-boundary-guard/
+|-- plugin.json
+|-- LICENSE
+|-- README.md
+`-- skills/canon-boundary-guard/
+    |-- SKILL.md
+    |-- agents/openai.yaml
+    `-- scripts/
+        |-- extract_proof.py
+        `-- artifact_fingerprint.py
 ```
 
-Project instruction anchor:
+Its complete posture is in one
+[SKILL.md](plugin/canon-boundary-guard/skills/canon-boundary-guard/SKILL.md).
+The metadata targets ChatGPT `CHAT`. It ships no state validator, state schemas,
+Project instruction anchor, or recovery subsystem.
 
-```text
-PROJECT_CUSTOM_INSTRUCTIONS.txt
-```
-
-The bundle contains:
+The original Project bundle uses
+[PROJECT_CUSTOM_INSTRUCTIONS.txt](PROJECT_CUSTOM_INSTRUCTIONS.txt) as its
+instruction anchor and contains:
 
 ```text
 canon-boundary-guard-gpt/
@@ -169,16 +173,13 @@ canon-boundary-guard-gpt/
     `-- validate_state.py
 ```
 
-## 🧭 Operating Model
+## 🧭 Project Bundle Details
 
-This is a GPT Project adaptation of Canon Boundary Guard. It can also be used as
-a manually uploaded session frame in ordinary ChatGPT chats, with weaker
-continuity.
+The following source classes, gate labels, extraction rules, and state workflow
+describe the **Project bundle**. The plugin's conversation-scoped rules are
+defined in its own skill linked above.
 
-It does not rely on Codex hooks, Claude skill execution, browser extensions, or
-a background service.
-
-The recommended operating model is:
+The Project operating model is:
 
 - upload the zipped source bundle to the Project
 - paste `PROJECT_CUSTOM_INSTRUCTIONS.txt` into Project instructions
@@ -187,7 +188,7 @@ The recommended operating model is:
 - treat Project files, `/mnt/data`, and saved material as evidence only after
   current-task inspection
 
-## 🧩 Source Classes
+### Source classes
 
 The frame separates source classes:
 
@@ -200,12 +201,10 @@ The frame separates source classes:
 A Project Source is `L0` only for the relevant surface inspected in the current
 task. Presence in Project files is not evidence by itself.
 
-## 🚦 Simulated Gate
+### Simulated gate
 
-GPT Projects do not expose a user-defined pre-write hook.
-
-The adapter therefore defines a simulated gate at the semantic persistence
-boundary.
+The Project adapter implements its gate through instructions at the semantic
+persistence boundary, without an executable pre-write hook.
 
 The gate is required before:
 
@@ -226,7 +225,7 @@ Labels are deterministic:
 [DRAFT - REQUIRES OPERATOR APPROVAL]
 ```
 
-## 📦 Source-Staged Extraction
+### Source-staged extraction
 
 If the bundle zip is available only inside `/mnt/data`, it can be extracted as a
 source-staged extraction.
@@ -240,7 +239,7 @@ declare the missing anchor and limit `L0` to the inspected path with a risk note
 
 Assistant-generated scratch artifacts remain non-evidence.
 
-## 🧠 State and Recovery
+### State and recovery
 
 Working state path:
 
@@ -267,45 +266,51 @@ Recovery sources:
 2. pasted `CANON_STATE_DELTA` with valid `current_state`
 3. explicit operator reconstruction marked as `L1A`
 
-## 🧪 Validators
+## 🧪 Helpers and Verification
 
 The Python scripts are optional mechanical helpers. They are not hooks and do
 not decide provenance.
 
-`validate_state.py` validates `SESSION_STATE` and `CANON_STATE_DELTA` files:
+Both formats include identical copies of:
+
+- `extract_proof.py`: extracts mechanical proof-of-read from text or Markdown,
+  reading with `utf-8-sig`. An input with no text lines has `line_range: null`.
+- `artifact_fingerprint.py`: emits file size, modified time, and SHA-256.
+
+These two helpers use only Python's standard library and can run on accessible
+files in ChatGPT's Python environment.
+
+Only the Project bundle includes `validate_state.py`, which validates
+`SESSION_STATE` and `CANON_STATE_DELTA` files:
 
 - uses `jsonschema` when available
 - falls back to strict manual validation
 - reads JSON with `utf-8-sig`
 - fails closed when a required schema feature cannot be checked
 
-`extract_proof.py` extracts mechanical proof-of-read from text or Markdown
-files and reads with `utf-8-sig`.
-
-`artifact_fingerprint.py` emits file size, modified time, and SHA-256.
-
-### Helper regression tests
+### Repository checks
 
 Run `python -B -m unittest discover -s tests -v` from the repository root.
 To exercise the optional `jsonschema` branch as well as the manual fallback,
 install `requirements-test.txt` in your test environment first. Without it,
 the suite explicitly skips the tests that require that library.
 
-The regressions cover integral JSON sequence values and conflicting delta
-sequences, Markdown fenced code and heading selection, the ten-word proof
-boundary, relocated schema paths, UTF-8 BOM input, and file fingerprints.
+The regressions cover JSON sequence validation, Markdown headings and fenced
+code, the ten-word proof boundary, empty and BOM-only input, relocated schema
+paths, and file fingerprints.
 
-For the native copy, set `CBG_TEST_BUNDLE` to
-`plugin/canon-boundary-guard/skills/canon-boundary-guard-gpt-project` and run the
-same suite. `python tools/package_plugin.py` separately checks that the native
-resources match the source bundle and verifies the generated ZIP contents.
+The native package tests extract its ZIP and execute both shipped helpers from
+an unrelated working directory, without state files or schemas. The state tests
+apply only to the original source bundle.
 
-## ⚠️ Limits
+Run `python -B -X utf8 tools/verify_plugin.py` to run the suite, build the plugin,
+and audit its helpers together. The runner writes test logs, an archive manifest,
+and results for the exact package bytes into the local `dist/` directory.
+`python tools/package_plugin.py` builds only the package and checks its inventory,
+helper copies, resource references, and archive contents.
 
-This package reduces silent promotion. It does not provide hard enforcement.
-
-ChatGPT can still answer incorrectly, skip instructions, lose context, or fail
-to inspect available files. The frame is a working discipline for GPT Projects,
-not a guarantee.
+These checks verify code and packaging. They do not establish ChatGPT's loading
+or instruction-following behavior; those require a conversation with the
+installed plugin activated through custom instructions or an explicit tag.
 
 </details>
